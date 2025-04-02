@@ -8,10 +8,10 @@ const app = express();
 const server = http.createServer(app);
 
 const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  origin: [
+    "http://localhost:3000", // For local development
+    "https://sudoku-multi.onrender.com", // Your production domain
+  ],
 });
 // Serve static files from the React app's build folder
 app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
