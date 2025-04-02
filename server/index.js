@@ -9,9 +9,9 @@ const server = http.createServer(app);
 
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 // Serve static files from the React app's build folder
 app.use(express.static(path.join(__dirname, '..', 'client', 'build')));

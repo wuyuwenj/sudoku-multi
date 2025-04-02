@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import io from 'socket.io-client';
-import SudokuBoard from './SudokuBoard';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import io from "socket.io-client";
+import SudokuBoard from "./SudokuBoard";
 
 const GameContainer = styled.div`
   max-width: 800px;
@@ -31,7 +31,7 @@ const GameInfo = styled.div`
 const Button = styled.button`
   padding: 10px 20px;
   font-size: 16px;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 5px;
@@ -43,7 +43,16 @@ const Button = styled.button`
   }
 `;
 
-const socket = io('http://localhost:3001');
+const protocol = window.location.protocol === "https:" ? "https://" : "http://";
+const SOCKET_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3001"
+    : `${protocol}${window.location.hostname}${
+        window.location.port ? ":" + window.location.port : ""
+      }`;
+const socket = io(SOCKET_URL);
+
+console.log("Connecting to socket server at:", SOCKET_URL);
 
 const Game = () => {
   const [gameId, setGameId] = useState(null);
@@ -51,32 +60,37 @@ const Game = () => {
   const [selectedCell, setSelectedCell] = useState(null);
   const [players, setPlayers] = useState({});
   const [scores, setScores] = useState([]);
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState("");
   const [lastMove, setLastMove] = useState(null);
 
   useEffect(() => {
-    console.log('Setting up socket listeners');
-    
-    socket.on('connect', () => {
-      console.log('Connected to server');
+    console.log("Setting up socket listeners");
+
+    socket.on("connect", () => {
+      console.log("Connected to server");
     });
-    
-    socket.on('gameCreated', ({ gameId, puzzle }) => {
-      console.log('Game created or joined:', gameId);
-      console.log('Received puzzle:', puzzle);
+
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      alert("Error connecting to game server. Please try again later.");
+    });
+
+    socket.on("gameCreated", ({ gameId, puzzle }) => {
+      console.log("Game created or joined:", gameId);
+      console.log("Received puzzle:", puzzle);
       setGameId(gameId);
       setPuzzle(puzzle);
     });
 
-    socket.on('playerJoined', ({ players, scores }) => {
-      console.log('Player joined event:', { players, scores });
+    socket.on("playerJoined", ({ players, scores }) => {
+      console.log("Player joined event:", { players, scores });
       setPlayers(players);
       setScores(scores);
     });
 
-    socket.on('moveMade', ({ row, col, value, player, players, scores }) => {
-      console.log('Move made:', { row, col, value, player });
-      setPuzzle(prev => {
+    socket.on("moveMade", ({ row, col, value, player, players, scores }) => {
+      console.log("Move made:", { row, col, value, player });
+      setPuzzle((prev) => {
         const newPuzzle = [...prev];
         newPuzzle[row][col] = value;
         return newPuzzle;
@@ -86,41 +100,42 @@ const Game = () => {
       setLastMove({ row, col, value, player });
     });
 
-
-    socket.on('error', ({ message }) => {
-      console.error('Socket error:', message);
+    socket.on("error", ({ message }) => {
+      console.error("Socket error:", message);
       alert(message);
     });
 
     return () => {
-      console.log('Cleaning up socket listeners');
-      socket.off('connect');
-      socket.off('gameCreated');
-      socket.off('playerJoined');
-      socket.off('moveMade');
-      socket.off('error');
+      console.log("Cleaning up socket listeners");
+      socket.off("connect");
+      socket.off("gameCreated");
+      socket.off("playerJoined");
+      socket.off("moveMade");
+      socket.off("error");
     };
   }, []);
 
   const createGame = () => {
     if (!playerName.trim()) {
-      alert('Please enter your name');
+      alert("Please enter your name");
       return;
     }
-    socket.emit('createGame', { playerName });
+    socket.emit("createGame", { playerName });
   };
 
   const joinGame = () => {
     if (!playerName.trim()) {
-      alert('Please enter your name');
+      alert("Please enter your name");
       return;
     }
     if (!gameId) {
-      alert('Please enter a game ID');
+      alert("Please enter a game ID");
       return;
     }
-    console.log(`Attempting to join game with ID: ${gameId}, player name: ${playerName}`);
-    socket.emit('joinGame', { gameId, playerName });
+    console.log(
+      `Attempting to join game with ID: ${gameId}, player name: ${playerName}`
+    );
+    socket.emit("joinGame", { gameId, playerName });
   };
 
   const handleCellClick = (row, col) => {
@@ -128,7 +143,7 @@ const Game = () => {
   };
 
   const handleCellChange = (row, col, value) => {
-    socket.emit('makeMove', { gameId, row, col, value });
+    socket.emit("makeMove", { gameId, row, col, value });
     setSelectedCell(null);
   };
 
@@ -137,23 +152,23 @@ const Game = () => {
       <GameInfo>
         {!puzzle ? (
           <>
-            <div style={{ margin: '20px 0' }}>
+            <div style={{ margin: "20px 0" }}>
               <input
                 type="text"
                 placeholder="Enter your name"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                style={{ marginRight: '10px', padding: '8px' }}
+                style={{ marginRight: "10px", padding: "8px" }}
               />
             </div>
             <Button onClick={createGame}>Create New Game</Button>
-            <div style={{ margin: '20px 0' }}>
+            <div style={{ margin: "20px 0" }}>
               <input
                 type="text"
                 placeholder="Enter game ID"
-                value={gameId || ''}
+                value={gameId || ""}
                 onChange={(e) => setGameId(e.target.value)}
-                style={{ marginRight: '10px', padding: '8px' }}
+                style={{ marginRight: "10px", padding: "8px" }}
               />
               <Button onClick={joinGame}>Join Game</Button>
             </div>
@@ -174,10 +189,15 @@ const Game = () => {
           />
           <Scoreboard>
             {scores.map(([playerId, score]) => {
-              console.log('Player ID:', playerId, 'Player Name:', players[playerId]);
+              console.log(
+                "Player ID:",
+                playerId,
+                "Player Name:",
+                players[playerId]
+              );
               return (
                 <PlayerScore key={playerId}>
-                  {players[playerId] || 'Unknown Player'}: {score}
+                  {players[playerId] || "Unknown Player"}: {score}
                 </PlayerScore>
               );
             })}
@@ -188,4 +208,4 @@ const Game = () => {
   );
 };
 
-export default Game; 
+export default Game;
